@@ -885,16 +885,21 @@ def build_environment_hints() -> str:
                 f"`uname -a && whoami && pwd`."
             )
 
-    # Hermes desktop terminal pane — the shell is embedded in the desktop app's
-    # GUI, which owns the chat. Flag set by main.cjs terminalShellEnv().
-    if (os.getenv("HERMES_DESKTOP_TERMINAL") or "").strip().lower() in ("1", "true", "yes"):
-        hints.append(
-            "Runtime surface: you're running inside the Hermes desktop app's "
-            "embedded terminal pane, next to its GUI chat. The user can select "
-            "your terminal output (⌥-drag on macOS, Shift-drag elsewhere) and "
-            "press ⌘/Ctrl+L to send the selection straight into the GUI chat "
-            "composer."
-        )
+    # Hermes desktop GUI — any agent running under the desktop app should know
+    # it. HERMES_DESKTOP marks the backend powering the chat; HERMES_DESKTOP_TERMINAL
+    # marks a hermes launched in the embedded terminal pane. Both set by main.cjs.
+    _truthy = ("1", "true", "yes")
+    _in_desktop = (os.getenv("HERMES_DESKTOP") or "").strip().lower() in _truthy
+    _in_desktop_term = (os.getenv("HERMES_DESKTOP_TERMINAL") or "").strip().lower() in _truthy
+    if _in_desktop or _in_desktop_term:
+        _desktop_hint = "Runtime surface: you're running inside the Hermes desktop GUI app."
+        if _in_desktop_term:
+            _desktop_hint += (
+                " You're in its embedded terminal pane, beside the GUI chat — the user can "
+                "select your output (⌥-drag on macOS, Shift-drag elsewhere) and press "
+                "⌘/Ctrl+L to send it to the chat composer."
+            )
+        hints.append(_desktop_hint)
 
     if is_wsl():
         hints.append(WSL_ENVIRONMENT_HINT)
