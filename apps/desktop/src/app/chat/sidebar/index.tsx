@@ -141,24 +141,25 @@ function orderByIds<T>(items: T[], getId: (item: T) => string, orderIds: string[
 
   const byId = new Map(items.map(item => [getId(item), item]))
   const seen = new Set<string>()
-  const out: T[] = []
+  const ordered: T[] = []
 
   for (const id of orderIds) {
     const item = byId.get(id)
 
     if (item) {
-      out.push(item)
+      ordered.push(item)
       seen.add(id)
     }
   }
 
-  for (const item of items) {
-    if (!seen.has(getId(item))) {
-      out.push(item)
-    }
-  }
+  // Items missing from the persisted order are new since it was last
+  // reconciled. Callers pass recency-sorted lists (newest first), so surface
+  // these at the TOP instead of burying them beneath the saved order —
+  // otherwise a brand-new session sinks to the bottom of the sidebar and reads
+  // as "my latest session never showed up".
+  const fresh = items.filter(item => !seen.has(getId(item)))
 
-  return out
+  return fresh.length ? [...fresh, ...ordered] : ordered
 }
 
 function reconcileOrderIds(currentIds: string[], orderIds: string[]): string[] {
@@ -171,17 +172,15 @@ function reconcileOrderIds(currentIds: string[], orderIds: string[]): string[] {
   }
 
   const current = new Set(currentIds)
-  const next = orderIds.filter(id => current.has(id))
-  const known = new Set(next)
+  const retained = orderIds.filter(id => current.has(id))
+  const retainedSet = new Set(retained)
 
-  for (const id of currentIds) {
-    if (!known.has(id)) {
-      next.push(id)
-      known.add(id)
-    }
-  }
+  // New ids (absent from the saved order) are the newest sessions/groups; keep
+  // them ahead of the persisted order so fresh activity surfaces at the top of
+  // the sidebar rather than being appended to the bottom.
+  const fresh = currentIds.filter(id => !retainedSet.has(id))
 
-  return next
+  return [...fresh, ...retained]
 }
 
 function sameIds(left: string[], right: string[]) {
