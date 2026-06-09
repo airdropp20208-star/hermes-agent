@@ -143,17 +143,6 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
   }
 
   useEffect(() => {
-    // Fires the terminal toggle for Ctrl+` even when the user's persisted binding
-    // predates the default change (old default was ⌘⌃`). ⌃` on macOS, Ctrl+`
-    // elsewhere — Shift (the ~ variant) is allowed, Alt is not.
-    const isTerminalFallbackCombo = (event: KeyboardEvent) => {
-      if (event.code !== 'Backquote' || event.altKey) {
-        return false
-      }
-
-      return event.ctrlKey
-    }
-
     const onKeyDown = (event: KeyboardEvent) => {
       // Capture mode: the next real key becomes the binding. Swallow everything
       // so e.g. ⌘K rebinds instead of opening the palette.
@@ -190,11 +179,6 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
       const actionId = $comboIndex.get().get(combo)
 
       if (!actionId) {
-        if (isTerminalFallbackCombo(event)) {
-          event.preventDefault()
-          setTerminalTakeover(!$terminalTakeover.get())
-        }
-
         return
       }
 
