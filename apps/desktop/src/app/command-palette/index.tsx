@@ -14,7 +14,6 @@ import {
   Activity,
   Archive,
   BarChart3,
-  Check,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -60,7 +59,6 @@ import { fieldCopyForSchemaKey } from '../settings/field-copy'
 import { prettyName } from '../settings/helpers'
 
 interface PaletteItem {
-  active?: boolean
   /** Keybind action id — its live combo renders as a hotkey hint. */
   action?: string
   icon: IconComponent
@@ -158,7 +156,7 @@ export function CommandPalette() {
   const open = useStore($commandPaletteOpen)
   const bindings = useStore($bindings)
   const navigate = useNavigate()
-  const { availableThemes, mode, resolvedMode, setMode, setTheme, themeName } = useTheme()
+  const { availableThemes, setMode, setTheme } = useTheme()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState<string | null>(null)
 
@@ -430,7 +428,6 @@ export function CommandPalette() {
         groups: (['light', 'dark'] as const).map(groupMode => ({
           heading: groupMode === 'light' ? t.settings.modeOptions.light.label : t.settings.modeOptions.dark.label,
           items: availableThemes.map(theme => ({
-            active: themeName === theme.name && resolvedMode === groupMode,
             icon: groupMode === 'light' ? Sun : Moon,
             id: `theme-${theme.name}-${groupMode}`,
             keepOpen: true,
@@ -450,7 +447,6 @@ export function CommandPalette() {
           {
             heading: t.settings.appearance.colorMode,
             items: THEME_MODES.map(entry => ({
-              active: mode === entry.mode,
               icon: entry.icon,
               id: `mode-${entry.mode}`,
               keepOpen: true,
@@ -462,7 +458,7 @@ export function CommandPalette() {
         ]
       }
     }),
-    [availableThemes, mode, resolvedMode, setMode, setTheme, t, themeName]
+    [availableThemes, setMode, setTheme, t]
   )
 
   const activePage = page ? subPages[page] : null
@@ -548,13 +544,9 @@ export function CommandPalette() {
                         <Icon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">{item.label}</span>
                         {keys && <KbdGroup className="ml-auto" keys={keys} />}
-                        {item.to ? (
+                        {item.to && (
                           <ChevronRight
                             className={cn('size-4 shrink-0 text-muted-foreground/70', !keys && 'ml-auto')}
-                          />
-                        ) : (
-                          <Check
-                            className={cn('size-4 text-foreground', !keys && 'ml-auto', !item.active && 'invisible')}
                           />
                         )}
                       </CommandItem>
