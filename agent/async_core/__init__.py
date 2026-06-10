@@ -11,6 +11,12 @@ Modules:
     budget          - Token usage and cost tracking
     sessions        - Multi-session manager with branching
     cli_enhanced    - Rich terminal CLI with autocomplete
+    llm_client      - Multi-provider LLM client (OpenAI/Anthropic/DeepSeek/Ollama)
+    embeddings      - TF-IDF + API embeddings for vector search
+    config          - Config manager (YAML, env vars, profiles)
+    server          - HTTP server (REST, SSE, WebSocket)
+    health          - Health monitoring, metrics, watchdog
+    container       - Dependency injection container
 """
 
 from .async_loop import (
@@ -76,7 +82,43 @@ from .cli_enhanced import (
     CommandRegistry,
 )
 
-__version__ = "0.2.0"
+from .llm_client import (
+    LLMClient,
+    LLMConfig,
+    LLMResponse,
+    Provider,
+    RateLimiter,
+)
+
+from .embeddings import (
+    TFIDFEmbedder,
+    APIEmbedder,
+    HybridEmbedder,
+)
+
+from .config import (
+    ConfigManager,
+)
+
+from .server import (
+    AsyncHTTPServer,
+    ServerConfig,
+    RequestHandler,
+)
+
+from .health import (
+    HealthMonitor,
+    HealthCheck,
+    HealthStatus,
+    Metrics,
+)
+
+from .container import (
+    Container,
+    create_default_container,
+)
+
+__version__ = "0.3.0"
 __all__ = [
     # Core
     "AsyncConversationLoop", "AsyncToolRunner", "AgentConfig", "AgentState",
@@ -97,4 +139,16 @@ __all__ = [
     "SessionManager", "Session", "Checkpoint",
     # CLI
     "EnhancedCLI", "CLIConfig", "CommandRegistry",
+    # LLM
+    "LLMClient", "LLMConfig", "LLMResponse", "Provider", "RateLimiter",
+    # Embeddings
+    "TFIDFEmbedder", "APIEmbedder", "HybridEmbedder",
+    # Config
+    "ConfigManager",
+    # Server
+    "AsyncHTTPServer", "ServerConfig", "RequestHandler",
+    # Health
+    "HealthMonitor", "HealthCheck", "HealthStatus", "Metrics",
+    # Container
+    "Container", "create_default_container",
 ]

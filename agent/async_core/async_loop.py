@@ -9,6 +9,7 @@ import logging
 from typing import Optional, Dict, Any, List, Callable, AsyncIterator
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import AsyncIterator as AsyncIter
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,7 @@ class AsyncConversationLoop:
         self.session_id = str(uuid.uuid4())
         self.turns: List[ConversationTurn] = []
         self.tool_runner = AsyncToolRunner(tool_registry or {}, config.max_parallel_tools)
+        self._llm_client = None  # Set via set_llm_client()
 
         self._interrupt = asyncio.Event()
         self._interrupt.set()  # Not interrupted
@@ -153,6 +155,10 @@ class AsyncConversationLoop:
         if event in self._hooks:
             self._hooks[event].append(callback)
 
+    def set_llm_client(self, client):
+        """Bind an LLMClient for real API calls."""
+        self._llm_client = client
+
     async def _emit(self, event: str, **kwargs):
         """Emit event to all registered hooks."""
         for hook in self._hooks.get(event, []):
@@ -170,9 +176,36 @@ class AsyncConversationLoop:
         self.state = new_state
         await self._emit("on_state_change", old=old, new=new_state)
 
-    async def _call_llm(self, messages: List[Dict], stream: bool = False):
-        """Call LLM provider. Override in subclass for actual API calls."""
-        raise NotImplementedError("Subclass must implement _call_llm")
+    async def _call_llm(self, messages: List[Dict], stream: bool = False) -> Dict:
+        """Call LLM provider via LLMClient if available, else stub."""
+        if self._llm_client:
+            response = await self._llm_client.chat(messages, stream=stream)
+            result = {
+                "content": response.content,
+                "tool_calls": [],
+                "token_count": response.input_tokens + response.output_tokens,
+                "model": response.model,
+                "provider": response.provider,
+                "latency_ms": response.latency_ms,
+            }
+            if response.tool_calls:
+                for tc in response.tool_calls:
+                    if isinstance(tc, dict):
+                        func = tc.get("function", tc)
+                        result["tool_calls"].append({
+                            "id": tc.get("id", str(uuid.uuid4())),
+                            "name": func.get("name", tc.get("name", "")),
+                            "arguments": func.get("arguments", tc.get("arguments", {})),
+                        })
+            return result
+
+        # Stub: echo back last user message
+        last_user = ""
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                last_user = msg.get("content", "")
+                break
+        return {"content": f"[Stub LLM] {last_user}", "tool_calls": [], "token_count": 0}
 
     async def _process_tool_calls(self, tool_calls_data: List[Dict]) -> List[ToolCall]:
         """Process tool calls — parallel if enabled."""

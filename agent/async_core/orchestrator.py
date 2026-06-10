@@ -84,10 +84,22 @@ class AsyncOrchestrator:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._agent_factory: Optional[Callable] = None
         self._results: Dict[str, AgentResult] = {}
+        self._llm_client = None
+        self._tool_registry: Dict[str, Callable] = {}
+        self._default_model: str = ""
 
     def set_agent_factory(self, factory: Callable):
         """Set the factory function that creates agent instances."""
         self._agent_factory = factory
+
+    def set_llm_client(self, client, model: str = ""):
+        """Set LLM client for real agent creation."""
+        self._llm_client = client
+        self._default_model = model
+
+    def set_tool_registry(self, registry: Dict[str, Callable]):
+        """Set tool registry for agent use."""
+        self._tool_registry = registry
 
     async def spawn(self, spec: AgentSpec) -> AgentResult:
         """Spawn a single agent and wait for result."""
@@ -166,22 +178,48 @@ class AsyncOrchestrator:
         return root_result
 
     async def _run_agent(self, process: AgentProcess) -> AgentResult:
-        """Run a single agent — calls the factory."""
+        """Run a single agent via factory or built-in loop."""
         start = time.time()
 
-        if self._agent_factory:
-            output = await self._agent_factory(process.spec)
-        else:
-            # Default: simulate agent work
-            output = f"Agent {process.agent_id} ({process.spec.role.value}): {process.spec.goal}"
+        try:
+            if self._agent_factory:
+                output = await self._agent_factory(process.spec)
+            elif self._llm_client:
+                # Use LLM directly
+                from .async_loop import AsyncConversationLoop, AgentConfig
+                config = AgentConfig(
+                    model=process.spec.model or self._default_model,
+                    max_iterations=process.spec.max_iterations,
+                    system_prompt=f"You are a {process.spec.role.value} agent. Goal: {process.spec.goal}",
+                )
+                loop = AsyncConversationLoop(config, dict(self._tool_registry))
+                loop.set_llm_client(self._llm_client)
 
-        return AgentResult(
-            agent_id=process.agent_id,
-            spec=process.spec,
-            output=str(output),
-            success=True,
-            duration=time.time() - start,
-        )
+                context_msg = process.spec.context or ""
+                full_input = process.spec.goal + ("\n\nContext: " + context_msg if context_msg else "")
+                output_parts = []
+                async for token in loop.chat(full_input):
+                    output_parts.append(token)
+                output = "".join(output_parts)
+            else:
+                output = f"[Stub] Agent {process.agent_id} ({process.spec.role.value}): {process.spec.goal}"
+
+            return AgentResult(
+                agent_id=process.agent_id,
+                spec=process.spec,
+                output=str(output),
+                success=True,
+                duration=time.time() - start,
+            )
+        except Exception as e:
+            return AgentResult(
+                agent_id=process.agent_id,
+                spec=process.spec,
+                output="",
+                success=False,
+                duration=time.time() - start,
+                error=str(e),
+            )
 
     def get_status(self) -> Dict:
         """Get orchestrator status."""

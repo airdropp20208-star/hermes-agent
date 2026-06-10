@@ -578,6 +578,266 @@ test("CLI config", test_cli_config)
 test("Command registry", test_command_registry)
 test("Command listing", test_command_list)
 
+# ========== Module 10: LLM Client ==========
+print("\n--- Module 10: LLM Client ---")
+
+def test_llm_config():
+    from agent.async_core.llm_client import LLMConfig, Provider
+    config = LLMConfig(provider=Provider.OPENAI, model="gpt-4o-mini", api_key="test-key")
+    assert config.provider == Provider.OPENAI
+    assert config.max_retries == 3
+
+def test_llm_response():
+    from agent.async_core.llm_client import LLMResponse
+    resp = LLMResponse(content="hello", model="gpt-4o", input_tokens=10, output_tokens=5)
+    assert resp.content == "hello"
+    assert resp.input_tokens + resp.output_tokens == 15
+
+def test_rate_limiter():
+    from agent.async_core.llm_client import RateLimiter
+    limiter = RateLimiter(requests_per_minute=100, tokens_per_minute=100000)
+    # Should not block for first request
+    asyncio.run(limiter.acquire(estimated_tokens=100))
+
+def test_llm_stats():
+    from agent.async_core.llm_client import LLMClient, LLMConfig
+    client = LLMClient(LLMConfig())
+    stats = client.stats()
+    assert stats["total_requests"] == 0
+    assert stats["cache_size"] == 0
+
+test("LLM config", test_llm_config)
+test("LLM response", test_llm_response)
+test("Rate limiter", test_rate_limiter)
+test("LLM stats", test_llm_stats)
+
+# ========== Module 11: Embeddings ==========
+print("\n--- Module 11: Embeddings ---")
+
+def test_tfidf_embed():
+    from agent.async_core.embeddings import TFIDFEmbedder
+    embedder = TFIDFEmbedder(dimension=64)
+    vec = embedder.embed("Hello world this is a test")
+    assert len(vec) == 64
+    assert sum(x * x for x in vec) > 0  # Not all zeros
+
+def test_tfidf_batch():
+    from agent.async_core.embeddings import TFIDFEmbedder
+    embedder = TFIDFEmbedder(dimension=64)
+    vecs = embedder.embed_batch(["hello", "world", "test"])
+    assert len(vecs) == 3
+    assert all(len(v) == 64 for v in vecs)
+
+def test_tfidf_fit():
+    from agent.async_core.embeddings import TFIDFEmbedder
+    embedder = TFIDFEmbedder(dimension=64)
+    embedder.fit(["Python is great", "JavaScript is also good", "Python and JavaScript"])
+    vec1 = embedder.embed("Python programming")
+    vec2 = embedder.embed("JavaScript web")
+    # Different texts should produce different vectors
+    assert vec1 != vec2
+
+def test_tfidf_similarity():
+    from agent.async_core.embeddings import TFIDFEmbedder
+    embedder = TFIDFEmbedder(dimension=128)
+    embedder.fit(["machine learning", "deep learning", "cooking recipes"])
+    v1 = embedder.embed("machine learning algorithms")
+    v2 = embedder.embed("deep learning neural networks")
+    v3 = embedder.embed("cooking Italian pasta")
+    # v1 and v2 should be more similar than v1 and v3
+    sim_12 = sum(a * b for a, b in zip(v1, v2))
+    sim_13 = sum(a * b for a, b in zip(v1, v3))
+    assert sim_12 > sim_13
+
+test("TF-IDF embed", test_tfidf_embed)
+test("TF-IDF batch", test_tfidf_batch)
+test("TF-IDF fit", test_tfidf_fit)
+test("TF-IDF similarity", test_tfidf_similarity)
+
+# ========== Module 12: Config Manager ==========
+print("\n--- Module 12: Config Manager ---")
+
+def test_config_defaults():
+    from agent.async_core.config import ConfigManager
+    cfg = ConfigManager(config_dir=tempfile.mkdtemp())
+    assert cfg.get("llm.provider") == "openai"
+    assert cfg.get("llm.max_tokens") == 4096
+    assert cfg.get("budget.daily_limit_usd") == 10.0
+
+def test_config_set_get():
+    from agent.async_core.config import ConfigManager
+    cfg = ConfigManager(config_dir=tempfile.mkdtemp())
+    cfg.set("llm.model", "gpt-4o")
+    assert cfg.get("llm.model") == "gpt-4o"
+    cfg.set("server.port", 9090)
+    assert cfg.get("server.port") == 9090
+
+def test_config_section():
+    from agent.async_core.config import ConfigManager
+    cfg = ConfigManager(config_dir=tempfile.mkdtemp())
+    llm_section = cfg.get_section("llm")
+    assert "provider" in llm_section
+    assert "model" in llm_section
+
+def test_config_save_load():
+    from agent.async_core.config import ConfigManager
+    d = tempfile.mkdtemp()
+    cfg1 = ConfigManager(config_dir=d)
+    cfg1.set("llm.model", "custom-model")
+    cfg1.save()
+    cfg2 = ConfigManager(config_dir=d)
+    assert cfg2.get("llm.model") == "custom-model"
+
+def test_config_api_key():
+    from agent.async_core.config import ConfigManager
+    cfg = ConfigManager(config_dir=tempfile.mkdtemp())
+    cfg.set("llm.api_key", "sk-test-123")
+    assert cfg.get_api_key("openai") == "sk-test-123"
+
+test("Config defaults", test_config_defaults)
+test("Config set/get", test_config_set_get)
+test("Config section", test_config_section)
+test("Config save/load", test_config_save_load)
+test("Config API key", test_config_api_key)
+
+# ========== Module 13: Health Monitor ==========
+print("\n--- Module 13: Health Monitor ---")
+
+def test_health_check():
+    from agent.async_core.health import HealthMonitor, HealthCheck, HealthStatus
+    monitor = HealthMonitor()
+    monitor.register_check("test", lambda: HealthCheck(name="test", status=HealthStatus.HEALTHY))
+    results = asyncio.run(monitor.run_checks())
+    assert "test" in results
+    assert results["test"].status == HealthStatus.HEALTHY
+
+def test_health_overall():
+    from agent.async_core.health import HealthMonitor, HealthCheck, HealthStatus
+    monitor = HealthMonitor()
+    monitor.register_check("ok", lambda: HealthCheck(name="ok", status=HealthStatus.HEALTHY))
+    monitor.register_check("bad", lambda: HealthCheck(name="bad", status=HealthStatus.CRITICAL))
+    asyncio.run(monitor.run_checks())
+    assert monitor.overall_status() == HealthStatus.CRITICAL
+
+def test_health_metrics():
+    from agent.async_core.health import HealthMonitor
+    monitor = HealthMonitor()
+    metrics = monitor.get_metrics()
+    assert metrics.uptime >= 0
+    assert metrics.request_count == 0
+
+def test_health_request_recording():
+    from agent.async_core.health import HealthMonitor
+    monitor = HealthMonitor()
+    monitor.record_request(latency_ms=100)
+    monitor.record_request(latency_ms=200, error=True)
+    metrics = monitor.get_metrics()
+    assert metrics.request_count == 2
+    assert metrics.error_count == 1
+
+def test_health_report():
+    from agent.async_core.health import HealthMonitor
+    monitor = HealthMonitor()
+    report = monitor.report()
+    assert "status" in report
+    assert "uptime" in report
+
+test("Health check", test_health_check)
+test("Health overall status", test_health_overall)
+test("Health metrics", test_health_metrics)
+test("Health request recording", test_health_request_recording)
+test("Health report", test_health_report)
+
+# ========== Module 14: DI Container ==========
+print("\n--- Module 14: DI Container ---")
+
+def test_container_register_get():
+    from agent.async_core.container import Container
+    c = Container()
+    c.register_singleton("greeting", "hello world")
+    assert c.get("greeting") == "hello world"
+
+def test_container_factory():
+    from agent.async_core.container import Container
+    c = Container()
+    c.register_factory("counter", lambda: {"count": 0})
+    result = c.get("counter")
+    assert result["count"] == 0
+    # Should be singleton after first get
+    result["count"] = 42
+    assert c.get("counter")["count"] == 42
+
+def test_container_has():
+    from agent.async_core.container import Container
+    c = Container()
+    c.register_singleton("x", 1)
+    c.register_factory("y", lambda: 2)
+    assert c.has("x")
+    assert c.has("y")
+    assert not c.has("z")
+
+def test_container_list():
+    from agent.async_core.container import Container
+    c = Container()
+    c.register_singleton("a", "A")
+    c.register_factory("b", lambda: "B")
+    services = c.list_services()
+    assert "a" in services
+    assert "b" in services
+
+def test_container_key_error():
+    from agent.async_core.container import Container
+    c = Container()
+    try:
+        c.get("nonexistent")
+        assert False, "Should have raised KeyError"
+    except KeyError:
+        pass
+
+test("Container register/get", test_container_register_get)
+test("Container factory", test_container_factory)
+test("Container has", test_container_has)
+test("Container list", test_container_list)
+test("Container KeyError", test_container_key_error)
+
+# ========== Module 15: Server ==========
+print("\n--- Module 15: HTTP Server ---")
+
+def test_server_config():
+    from agent.async_core.server import ServerConfig
+    cfg = ServerConfig(host="127.0.0.1", port=9090)
+    assert cfg.host == "127.0.0.1"
+    assert cfg.port == 9090
+    assert cfg.cors_origins == ["*"]
+
+def test_request_handler_routing():
+    from agent.async_core.server import RequestHandler
+    h = RequestHandler()
+    @h.route("/test", ["GET"])
+    def handler():
+        return {"ok": True}
+    route = h.get_route("GET", "/test")
+    assert route is not None
+    assert route["path"] == "/test"
+
+def test_request_handler_404():
+    from agent.async_core.server import RequestHandler
+    h = RequestHandler()
+    route = h.get_route("GET", "/nonexistent")
+    assert route is None
+
+def test_server_stats():
+    from agent.async_core.server import AsyncHTTPServer, ServerConfig
+    server = AsyncHTTPServer(ServerConfig(port=19999))
+    stats = server.stats()
+    assert stats["connections"] == 0
+    assert stats["routes"] >= 2  # health + stats
+
+test("Server config", test_server_config)
+test("Request handler routing", test_request_handler_routing)
+test("Request handler 404", test_request_handler_404)
+test("Server stats", test_server_stats)
+
 # ========== Summary ==========
 print("\n" + "=" * 50)
 print("  Results: %d passed, %d failed" % (passed, failed))

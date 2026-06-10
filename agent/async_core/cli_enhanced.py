@@ -119,9 +119,49 @@ class EnhancedCLI:
         """Bind an agent to the CLI."""
         self._agent = agent
 
+    def _setup_readline(self):
+        """Setup readline for history and tab completion."""
+        try:
+            import readline
+            readline.set_history_length(self.config.max_history)
+
+            # Tab completion
+            def completer(text, state):
+                options = []
+                if text.startswith('/'):
+                    options = self.commands.complete(text)
+                if state < len(options):
+                    return options[state]
+                return None
+
+            readline.set_completer(completer)
+            readline.parse_and_bind('tab: complete')
+
+            # Load history from file
+            history_path = os.path.expanduser('~/.hermes/async_core/cli_history')
+            try:
+                readline.read_history_file(history_path)
+            except FileNotFoundError:
+                pass
+            self._history_path = history_path
+        except ImportError:
+            self._history_path = None
+
+    def _save_readline_history(self):
+        """Save readline history."""
+        try:
+            import readline
+            path = getattr(self, '_history_path', None)
+            if path:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                readline.write_history_file(path)
+        except Exception:
+            pass
+
     async def run(self):
         """Main CLI loop."""
         self._running = True
+        self._setup_readline()
         self._print_banner()
 
         while self._running:
@@ -269,7 +309,8 @@ class EnhancedCLI:
 
     def _cmd_quit(self, args):
         self._running = False
-        self._print("Goodbye! 👋", C.CYAN)
+        self._save_readline_history()
+        self._print("Goodbye! \U0001f44b", C.CYAN)
 
     def _cmd_clear(self, args):
         os.system('clear' if os.name != 'nt' else 'cls')
