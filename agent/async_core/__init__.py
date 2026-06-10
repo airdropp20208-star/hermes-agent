@@ -64,7 +64,14 @@ from .planner import AutonomousPlanner, Plan, Task, GoalNode, PlanStatus, TaskSt
 from .semantic_cache import SemanticCache, CacheEntry
 from .code_intel import CodeAnalyzer, FileAnalysis, FunctionInfo, ClassInfo, CodeIssue
 
-__version__ = "0.5.0"
+# === Super Cognition (AGI-grade) ===
+from .metacognition import MetacognitionEngine, ReasoningTrace, CognitiveState, ConfidenceCalibrator, BiasDetector
+from .theory_of_mind import TheoryOfMind, UserBelief, UserGoal, UserEmotionalState, CommunicationStyle
+from .chain_of_thought import ChainOfThoughtEngine, Thought, ThoughtType, ReasoningChain
+from .world_model import WorldModel, WorldState, Action, Prediction, Simulation
+from .curiosity import CuriosityEngine, Hypothesis, CuriosityType, ExplorationGoal
+
+__version__ = "0.6.0"
 __all__ = [
     # Core
     "AsyncConversationLoop", "AsyncToolRunner", "AgentConfig", "AgentState",
@@ -103,4 +110,10 @@ __all__ = [
     "AutonomousPlanner", "Plan", "Task", "GoalNode", "PlanStatus", "TaskStatus",
     "SemanticCache", "CacheEntry",
     "CodeAnalyzer", "FileAnalysis", "FunctionInfo", "ClassInfo", "CodeIssue",
+    # Super Cognition
+    "MetacognitionEngine", "ReasoningTrace", "CognitiveState", "ConfidenceCalibrator", "BiasDetector",
+    "TheoryOfMind", "UserBelief", "UserGoal", "UserEmotionalState", "CommunicationStyle",
+    "ChainOfThoughtEngine", "Thought", "ThoughtType", "ReasoningChain",
+    "WorldModel", "WorldState", "Action", "Prediction", "Simulation",
+    "CuriosityEngine", "Hypothesis", "CuriosityType", "ExplorationGoal",
 ]
