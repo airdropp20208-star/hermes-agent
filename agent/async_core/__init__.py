@@ -1,154 +1,93 @@
 """
-Hermes Agent Async Core — full async framework.
+Hermes Agent Async Core v0.4.0 — complete agent framework.
 
-Modules:
-    async_loop      - True async conversation loop with concurrent tools
-    orchestrator    - Multi-agent orchestrator (spawn, delegate, coordinate)
-    memory          - Persistent memory with vector search
-    plugins         - Hot-loadable plugin engine
-    events          - Event bus (pub/sub with middleware)
-    streaming       - SSE/WebSocket streaming engine
-    budget          - Token usage and cost tracking
-    sessions        - Multi-session manager with branching
-    cli_enhanced    - Rich terminal CLI with autocomplete
-    llm_client      - Multi-provider LLM client (OpenAI/Anthropic/DeepSeek/Ollama)
-    embeddings      - TF-IDF + API embeddings for vector search
-    config          - Config manager (YAML, env vars, profiles)
-    server          - HTTP server (REST, SSE, WebSocket)
-    health          - Health monitoring, metrics, watchdog
-    container       - Dependency injection container
+22 modules covering every aspect of autonomous agent operation:
+    Core:       async_loop, orchestrator, llm_client
+    Memory:     memory, embeddings, sessions, context
+    Tools:      tools, sandbox, rag
+    Infra:      config, events, streaming, budget, server
+    Safety:     guardrails, recovery, health
+    Extend:     plugins, workflows, container, cli_enhanced
 """
 
+# === Core ===
 from .async_loop import (
-    AsyncConversationLoop,
-    AsyncToolRunner,
-    AgentConfig,
-    AgentState,
-    ToolCall,
-    ConversationTurn,
+    AsyncConversationLoop, AsyncToolRunner, AgentConfig, AgentState,
+    ToolCall, ConversationTurn,
 )
-
 from .orchestrator import (
-    AsyncOrchestrator,
-    AgentSpec,
-    AgentRole,
-    AgentResult,
-    AgentProcess,
+    AsyncOrchestrator, AgentSpec, AgentRole, AgentResult, AgentProcess,
 )
-
-from .memory import (
-    MemoryStore,
-    MemoryEntry,
-    VectorIndex,
-)
-
-from .plugins import (
-    PluginEngine,
-    PluginBase,
-    PluginInfo,
-)
-
-from .events import (
-    EventBus,
-    Event,
-    EventPriority,
-    EventHandler,
-)
-
-from .streaming import (
-    StreamingEngine,
-    StreamSession,
-    StreamChunk,
-    StreamType,
-)
-
-from .budget import (
-    BudgetTracker,
-    BudgetLimit,
-    BudgetScope,
-    UsageRecord,
-    MODEL_PRICING,
-)
-
-from .sessions import (
-    SessionManager,
-    Session,
-    Checkpoint,
-)
-
-from .cli_enhanced import (
-    EnhancedCLI,
-    CLIConfig,
-    CommandRegistry,
-)
-
 from .llm_client import (
-    LLMClient,
-    LLMConfig,
-    LLMResponse,
-    Provider,
-    RateLimiter,
+    LLMClient, LLMConfig, LLMResponse, Provider, RateLimiter,
 )
 
-from .embeddings import (
-    TFIDFEmbedder,
-    APIEmbedder,
-    HybridEmbedder,
-)
+# === Memory ===
+from .memory import MemoryStore, MemoryEntry, VectorIndex
+from .embeddings import TFIDFEmbedder, APIEmbedder, HybridEmbedder
+from .sessions import SessionManager, Session, Checkpoint
+from .context import ContextCompressor, CompressionStrategy, Message
 
-from .config import (
-    ConfigManager,
+# === Tools ===
+from .tools import (
+    ToolRegistry, ToolSchema, ToolResult, ToolCategory,
+    ToolMiddleware, LoggingMiddleware, MetricsMiddleware,
 )
+from .sandbox import CodeSandbox, SandboxConfig, ExecutionResult
+from .rag import DocumentLoader, TextChunker, RAGRetriever, Document, Chunk
 
-from .server import (
-    AsyncHTTPServer,
-    ServerConfig,
-    RequestHandler,
+# === Infrastructure ===
+from .config import ConfigManager
+from .events import EventBus, Event, EventPriority, EventHandler
+from .streaming import StreamingEngine, StreamSession, StreamChunk, StreamType
+from .budget import BudgetTracker, BudgetLimit, BudgetScope, UsageRecord, MODEL_PRICING
+from .server import AsyncHTTPServer, ServerConfig, RequestHandler
+
+# === Safety ===
+from .guardrails import (
+    GuardrailsPipeline, GuardResult, RiskLevel,
+    PromptInjectionGuard, ContentFilterGuard, OutputValidatorGuard, RateLimitGuard,
 )
+from .recovery import AutoRecovery, ConversationState, ConversationCheckpoint, StateMachine
+from .health import HealthMonitor, HealthCheck, HealthStatus, Metrics
 
-from .health import (
-    HealthMonitor,
-    HealthCheck,
-    HealthStatus,
-    Metrics,
-)
+# === Extend ===
+from .plugins import PluginEngine, PluginBase, PluginInfo
+from .workflows import WorkflowEngine, WorkflowStep, WorkflowDef, WorkflowRun, StepStatus
+from .container import Container, create_default_container
+from .cli_enhanced import EnhancedCLI, CLIConfig, CommandRegistry
 
-from .container import (
-    Container,
-    create_default_container,
-)
-
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     # Core
     "AsyncConversationLoop", "AsyncToolRunner", "AgentConfig", "AgentState",
     "ToolCall", "ConversationTurn",
-    # Orchestrator
     "AsyncOrchestrator", "AgentSpec", "AgentRole", "AgentResult", "AgentProcess",
+    "LLMClient", "LLMConfig", "LLMResponse", "Provider", "RateLimiter",
     # Memory
     "MemoryStore", "MemoryEntry", "VectorIndex",
-    # Plugins
-    "PluginEngine", "PluginBase", "PluginInfo",
-    # Events
-    "EventBus", "Event", "EventPriority", "EventHandler",
-    # Streaming
-    "StreamingEngine", "StreamSession", "StreamChunk", "StreamType",
-    # Budget
-    "BudgetTracker", "BudgetLimit", "BudgetScope", "UsageRecord", "MODEL_PRICING",
-    # Sessions
-    "SessionManager", "Session", "Checkpoint",
-    # CLI
-    "EnhancedCLI", "CLIConfig", "CommandRegistry",
-    # LLM
-    "LLMClient", "LLMConfig", "LLMResponse", "Provider", "RateLimiter",
-    # Embeddings
     "TFIDFEmbedder", "APIEmbedder", "HybridEmbedder",
-    # Config
+    "SessionManager", "Session", "Checkpoint",
+    "ContextCompressor", "CompressionStrategy", "Message",
+    # Tools
+    "ToolRegistry", "ToolSchema", "ToolResult", "ToolCategory",
+    "ToolMiddleware", "LoggingMiddleware", "MetricsMiddleware",
+    "CodeSandbox", "SandboxConfig", "ExecutionResult",
+    "DocumentLoader", "TextChunker", "RAGRetriever", "Document", "Chunk",
+    # Infrastructure
     "ConfigManager",
-    # Server
+    "EventBus", "Event", "EventPriority", "EventHandler",
+    "StreamingEngine", "StreamSession", "StreamChunk", "StreamType",
+    "BudgetTracker", "BudgetLimit", "BudgetScope", "UsageRecord", "MODEL_PRICING",
     "AsyncHTTPServer", "ServerConfig", "RequestHandler",
-    # Health
+    # Safety
+    "GuardrailsPipeline", "GuardResult", "RiskLevel",
+    "PromptInjectionGuard", "ContentFilterGuard", "OutputValidatorGuard", "RateLimitGuard",
+    "AutoRecovery", "ConversationState", "ConversationCheckpoint", "StateMachine",
     "HealthMonitor", "HealthCheck", "HealthStatus", "Metrics",
-    # Container
+    # Extend
+    "PluginEngine", "PluginBase", "PluginInfo",
+    "WorkflowEngine", "WorkflowStep", "WorkflowDef", "WorkflowRun", "StepStatus",
     "Container", "create_default_container",
+    "EnhancedCLI", "CLIConfig", "CommandRegistry",
 ]
