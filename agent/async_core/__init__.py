@@ -71,7 +71,14 @@ from .chain_of_thought import ChainOfThoughtEngine, Thought, ThoughtType, Reason
 from .world_model import WorldModel, WorldState, Action, Prediction, Simulation
 from .curiosity import CuriosityEngine, Hypothesis, CuriosityType, ExplorationGoal
 
-__version__ = "0.6.0"
+# === Production-Grade Infrastructure ===
+from .tracing import Tracer, Trace, Span
+from .prompt_optimizer import PromptOptimizer, PromptVariant
+from .web_intel import WebExtractor, WebPage, ExtractedData, APIEndpoint
+from .agent_protocol import AgentProtocol, AgentProfile, AgentMessage, MessageType, Proposal
+from .test_gen import TestGenerator, TestCase, CoverageInfo
+
+__version__ = "0.7.0"
 __all__ = [
     # Core
     "AsyncConversationLoop", "AsyncToolRunner", "AgentConfig", "AgentState",
@@ -116,4 +123,10 @@ __all__ = [
     "ChainOfThoughtEngine", "Thought", "ThoughtType", "ReasoningChain",
     "WorldModel", "WorldState", "Action", "Prediction", "Simulation",
     "CuriosityEngine", "Hypothesis", "CuriosityType", "ExplorationGoal",
+    # Production Infrastructure
+    "Tracer", "Trace", "Span",
+    "PromptOptimizer", "PromptVariant",
+    "WebExtractor", "WebPage", "ExtractedData", "APIEndpoint",
+    "AgentProtocol", "AgentProfile", "AgentMessage", "MessageType", "Proposal",
+    "TestGenerator", "TestCase", "CoverageInfo",
 ]
