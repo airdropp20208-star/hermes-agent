@@ -57,7 +57,14 @@ from .workflows import WorkflowEngine, WorkflowStep, WorkflowDef, WorkflowRun, S
 from .container import Container, create_default_container
 from .cli_enhanced import EnhancedCLI, CLIConfig, CommandRegistry
 
-__version__ = "0.4.0"
+# === Super Upgrade ===
+from .knowledge_graph import KnowledgeGraph, Entity, Relationship, GraphQuery
+from .self_improve import SelfImprovementEngine, ActionRecord, Strategy, Lesson
+from .planner import AutonomousPlanner, Plan, Task, GoalNode, PlanStatus, TaskStatus
+from .semantic_cache import SemanticCache, CacheEntry
+from .code_intel import CodeAnalyzer, FileAnalysis, FunctionInfo, ClassInfo, CodeIssue
+
+__version__ = "0.5.0"
 __all__ = [
     # Core
     "AsyncConversationLoop", "AsyncToolRunner", "AgentConfig", "AgentState",
@@ -90,4 +97,10 @@ __all__ = [
     "WorkflowEngine", "WorkflowStep", "WorkflowDef", "WorkflowRun", "StepStatus",
     "Container", "create_default_container",
     "EnhancedCLI", "CLIConfig", "CommandRegistry",
+    # Super Upgrade
+    "KnowledgeGraph", "Entity", "Relationship", "GraphQuery",
+    "SelfImprovementEngine", "ActionRecord", "Strategy", "Lesson",
+    "AutonomousPlanner", "Plan", "Task", "GoalNode", "PlanStatus", "TaskStatus",
+    "SemanticCache", "CacheEntry",
+    "CodeAnalyzer", "FileAnalysis", "FunctionInfo", "ClassInfo", "CodeIssue",
 ]
